@@ -3,6 +3,10 @@ from flask_cors import CORS
 import numpy as np
 import cv2
 import joblib
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppresses INFO and WARNING logs
+import tensorflow as tf
+
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.models import model_from_json
