@@ -4,13 +4,7 @@ import numpy as np
 import cv2
 import joblib
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppresses INFO and WARNING logs
-import tensorflow as tf
-
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import model_from_json
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
@@ -108,4 +102,5 @@ def index():
     return "Hello, World!"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
