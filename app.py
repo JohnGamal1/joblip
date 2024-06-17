@@ -1,19 +1,28 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import numpy as np
 import cv2
 import joblib
 import os
+
+# Set environment variable to minimize TensorFlow logging
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+app = FastAPI()
+
+# Enable CORS for all routes
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load the saved model
 model_path = "trained_model5_inceptionv3old.joblib"
 loaded_model = joblib.load(model_path)
-
-# Ensure the loaded model is compiled (if necessary)
-# loaded_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Define cropping dimensions
 top_crop = 250  # Pixels from the top
@@ -35,14 +44,12 @@ class_labels = [
     'COVID-19 Patients'
 ]
 
-@app.route('/predict', methods=['POST'])
-def predict():
+@app.post("/predict")
+async def predict(image: UploadFile = File(...)):
     try:
-        # Get the image file from the request
-        img_file = request.files['image']
-        
         # Read the image
-        img = cv2.imdecode(np.frombuffer(img_file.read(), np.uint8), cv2.IMREAD_COLOR)
+        img_data = await image.read()
+        img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_COLOR)
         
         # Check if the image is loaded successfully
         if img is not None:
@@ -91,16 +98,12 @@ def predict():
             # Get the predicted category
             predicted_category = class_labels[np.argmax(prediction)]
 
-            return jsonify({"predicted_category": predicted_category})
+            return {"predicted_category": predicted_category}
         else:
-            return jsonify({"error": "Failed to load the image."})
+            raise HTTPException(status_code=400, detail="Failed to load the image.")
     except Exception as e:
-        return jsonify({"error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/')
-def index():
-    return "Hello, World!"
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+@app.get("/")
+def read_root():
+    return {"message": "Hello, World!"}
